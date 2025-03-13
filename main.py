@@ -6,6 +6,7 @@ from tickers_controller import TickersController
 from my_ticker import MyTicker
 import debug as db
 import pandas as pd
+import threading
 
 def get_keys(file="config.json"):
     with open(file, 'r') as f:
@@ -16,14 +17,18 @@ def get_moved_tickers(tickers):
     test_df = tickers.iloc[2020:2050]
     final_df = pd.DataFrame()
     for row_t in test_df.itertuples():
+        start = time.perf_counter()
         t = MyTicker(row_t.Code)
         if t is not None:
             t.calc_mov("1y")
-            data = [vars(t)]
-            data[0]['ticker'] = t.ticker.ticker
-            df = pd.DataFrame(data)
-            final_df = pd.concat([final_df, df], ignore_index=True)
-    
+            if t.avg_volume > 100000:
+                data = [vars(t)]
+                data[0]['ticker'] = t.ticker.ticker
+                end = time.perf_counter()
+                print(f"Tempo impiegato: {end-start:.6f} secondi")
+                df = pd.DataFrame(data)
+                final_df = pd.concat([final_df, df], ignore_index=True)
+        
     final_df = final_df.sort_values(
         by=['avg_volume', 'price_var_pcg', 'volatility'],
         ascending=[False, False, True]
